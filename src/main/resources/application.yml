@@ -1,0 +1,10 @@
+spring:
+  application:
+    name: reminder
+  datasource:
+    url: jdbc:postgresql://localhost:5432/reminder
+    username: reminder
+    password: ${DB_PASSWORD:reminder}
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
