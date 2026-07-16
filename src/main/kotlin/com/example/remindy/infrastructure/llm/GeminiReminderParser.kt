@@ -7,6 +7,7 @@ import com.example.remindy.domain.reminder.DayOfMonth
 import com.example.remindy.domain.reminder.Schedule
 import tools.jackson.databind.ObjectMapper
 import tools.jackson.databind.JsonNode
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import org.springframework.web.client.RestClient
 import java.time.DayOfWeek
@@ -24,6 +25,8 @@ class GeminiReminderParser(
     private val properties: LlmProperties,
     private val objectMapper: ObjectMapper,
 ) : ReminderParser {
+
+    private val log = LoggerFactory.getLogger(GeminiReminderParser::class.java)
 
     private val restClient: RestClient = RestClient.builder()
         .baseUrl(properties.baseUrl)
@@ -84,10 +87,25 @@ class GeminiReminderParser(
 
     private fun parseJson(raw: String): JsonNode =
         try {
-            objectMapper.readTree(raw.trim())
+            log.debug("LLM raw response: {}", raw)
+            objectMapper.readTree(extractFirstJsonObject(raw.trim()))
         } catch (e: Exception) {
+            log.warn("LLM returned invalid JSON: {}", raw)
             throw ReminderParseException("LLMが不正なJSONを返しました")
         }
+
+    /** LLM が末尾に余分なトークンを付けても最初の完全な JSON オブジェクトだけを返す。 */
+    private fun extractFirstJsonObject(text: String): String {
+        var depth = 0
+        var start = -1
+        for (i in text.indices) {
+            when (text[i]) {
+                '{' -> { if (start == -1) start = i; depth++ }
+                '}' -> { if (--depth == 0 && start != -1) return text.substring(start, i + 1) }
+            }
+        }
+        return text
+    }
 
     private fun toDraft(node: JsonNode): ReminderDraft {
         val title = node.path("title").asText(null)?.takeIf { it.isNotBlank() }
