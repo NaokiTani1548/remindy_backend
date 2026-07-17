@@ -8,6 +8,7 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+    ignore-migration-patterns: "repeatable:missing"
 
 server:
   port: ${PORT:8080}
