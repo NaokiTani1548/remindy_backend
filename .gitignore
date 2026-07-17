@@ -40,5 +40,6 @@ out/
 .kotlin
 
 .envrc
+.env
 
 run-local.sh

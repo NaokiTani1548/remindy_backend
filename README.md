@@ -565,7 +565,7 @@ LLM が解析不能なテキストを受け取った場合は `422` を返す。
 | GET | `/api/v1/sync` | 一括スナップショット取得 | 要 |
 
 ## NeonDBへのマイグレーション
-```aiignore
+```zsh
 cat > run-local.sh << 'EOF'
 #!/bin/bash
 export SPRING_PROFILES_ACTIVE=local
@@ -577,4 +577,9 @@ export JWT_SECRET=""
 EOF
 chmod +x run-local.sh
 ./run-local.sh
+```
+
+- 疎通確認
+```zsh
+psql "postgresql://neondb_owner:npg_boerT6W8amFQ@ep-curly-wave-az1lgh3y-pooler.c-3.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require" -c "\dt"
 ```
