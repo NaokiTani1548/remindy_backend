@@ -4,7 +4,6 @@ import com.nimbusds.jose.jwk.source.ImmutableSecret
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.core.annotation.Order
 import org.springframework.security.config.Customizer
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
@@ -32,24 +31,15 @@ class SecurityConfig(
     private val secretKey = SecretKeySpec(jwtProperties.secret.toByteArray(), "HmacSHA256")
 
     @Bean
-    @Order(1)
-    fun publicFilterChain(http: HttpSecurity): SecurityFilterChain {
-        http
-            .securityMatcher("/api/v1/auth/register", "/api/v1/auth/login")
-            .cors { it.configurationSource(corsConfigurationSource()) }
-            .csrf { it.disable() }
-            .authorizeHttpRequests { it.anyRequest().permitAll() }
-        return http.build()
-    }
-
-    @Bean
-    @Order(2)
     fun filterChain(http: HttpSecurity): SecurityFilterChain {
         http
             .cors { it.configurationSource(corsConfigurationSource()) }
             .csrf { it.disable() }
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
-            .authorizeHttpRequests { it.anyRequest().authenticated() }
+            .authorizeHttpRequests { auth ->
+                auth.requestMatchers("/api/v1/auth/register", "/api/v1/auth/login").permitAll()
+                auth.anyRequest().authenticated()
+            }
             .oauth2ResourceServer { rs -> rs.jwt(Customizer.withDefaults()) }
         return http.build()
     }
