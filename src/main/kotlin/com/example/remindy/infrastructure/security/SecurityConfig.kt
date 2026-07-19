@@ -37,7 +37,7 @@ class SecurityConfig(
             .csrf { it.disable() }
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
             .authorizeHttpRequests { auth ->
-                auth.requestMatchers("/api/v1/auth/register", "/api/v1/auth/login").permitAll()
+                auth.requestMatchers("/api/v1/auth/register", "/api/v1/auth/login", "/error").permitAll()
                 auth.anyRequest().authenticated()
             }
             .oauth2ResourceServer { rs -> rs.jwt(Customizer.withDefaults()) }
