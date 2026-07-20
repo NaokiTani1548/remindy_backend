@@ -9,7 +9,7 @@ import java.time.*
  * schedule の JSON 表現。type で分岐する判別共用体を Jackson の多相デシリアライズで表現。
  * ドメインの Schedule(sealed) に対応するが別物。JSONの都合(型タグ・文字列)はここに閉じる。
  */
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type")
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonSubTypes(
     JsonSubTypes.Type(ScheduleDto.OneTime::class, name = "ONE_TIME"),
     JsonSubTypes.Type(ScheduleDto.Daily::class,   name = "DAILY"),
