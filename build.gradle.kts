@@ -50,3 +50,16 @@ kotlin {
 tasks.withType<Test> {
     useJUnitPlatform()
 }
+
+// ローカルプロファイル起動時は Docker PostgreSQL へ強制接続する。
+// 環境変数（例: NeonDB 用の SPRING_DATASOURCE_URL）はシステムプロパティより優先順位が低いため、
+// 外部の DB 向け env var が設定されていても上書きされる。
+tasks.bootRun {
+    val profiles = System.getenv("SPRING_PROFILES_ACTIVE") ?: ""
+    if ("local" in profiles) {
+        systemProperty("spring.datasource.url",      "jdbc:postgresql://localhost:5433/reminder")
+        systemProperty("spring.datasource.username", "reminder")
+        systemProperty("spring.datasource.password", "reminder")
+        systemProperty("remindy.cors.allowed-origins", "http://localhost:5173,http://localhost:3000")
+    }
+}

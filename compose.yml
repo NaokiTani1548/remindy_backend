@@ -9,7 +9,7 @@ services:
       TZ: Asia/Tokyo
       PGTZ: Asia/Tokyo
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - reminder-pgdata:/var/lib/postgresql
     healthcheck:

@@ -16,6 +16,7 @@
 set -uo pipefail
 
 BASE="${BASE:-http://localhost:8080/api/v1}"
+HOST="${BASE%/api/v1}"
 
 # --- シード由来の固定値(R__seed_local_data.sql と一致) ---
 SEED_EMAIL="${SEED_EMAIL:-alice@example.com}"
@@ -67,10 +68,35 @@ json_field() {
 
 section() { printf '\n%s=== %s ===%s\n' "$DIM" "$1" "$RESET"; }
 
-# --- 接続確認 ---
-if ! curl -s -o /dev/null "${BASE%/api/v1}/api/v1/auth/login" -X OPTIONS 2>/dev/null; then
-  : # OPTIONS が無くても続行(下の login で判定)
-fi
+# health_api METHOD PATH EXPECTED_STATUS (HOST ベース、/api/v1 なし)
+health_api() {
+  local method="$1" path="$2" expect="$3" extra_args="${4:-}"
+  local resp status
+  # shellcheck disable=SC2086
+  resp="$(curl -s -w $'\n%{http_code}' -X "$method" "${HOST}${path}" $extra_args)"
+  status="$(printf '%s' "$resp" | tail -n1)"
+  LAST_BODY="$(printf '%s' "$resp" | sed '$d')"
+
+  if [ "$status" = "$expect" ]; then
+    printf '%sPASS%s [%s] %-6s %s\n' "$GREEN" "$RESET" "$status" "$method" "${HOST}${path}"
+    PASS=$((PASS + 1))
+  else
+    printf '%sFAIL%s [exp %s got %s] %-6s %s\n' "$RED" "$RESET" "$expect" "$status" "$method" "${HOST}${path}"
+    printf '%s      %s%s\n' "$DIM" "$LAST_BODY" "$RESET"
+    FAIL=$((FAIL + 1))
+  fi
+}
+
+# =============================================================================
+# 0. ヘルスチェック
+# =============================================================================
+section "0. Health"
+
+# 0-1 health: 即時チェック
+health_api GET /health 200
+
+# 0-2 connect: つながるまで待機(最大310秒)
+health_api GET /health/connect 200 "--max-time 310"
 
 # =============================================================================
 # 1. 認証
