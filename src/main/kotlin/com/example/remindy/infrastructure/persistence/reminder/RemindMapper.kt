@@ -3,6 +3,7 @@ package com.example.remindy.infrastructure.persistence.reminder
 import com.example.remindy.domain.reminder.*
 import com.example.remindy.domain.shared.UserId
 import java.time.*
+import java.util.UUID
 
 /**
  * ドメイン Reminder ⇔ 永続化 ReminderRecord の変換。
@@ -10,11 +11,21 @@ import java.time.*
  */
 object ReminderMapper {
 
-    fun toRecord(reminder: Reminder, clock: Clock): ReminderRecord {
-        val now = Instant.now(clock)
+    fun toNewRecord(reminder: Reminder, now: Instant): ReminderRecord =
+        buildRecord(reminder, id = null, createdAt = now, updatedAt = now)
+
+    fun toExistingRecord(reminder: Reminder, createdAt: Instant, updatedAt: Instant): ReminderRecord =
+        buildRecord(reminder, id = reminder.id!!.value, createdAt = createdAt, updatedAt = updatedAt)
+
+    private fun buildRecord(
+        reminder: Reminder,
+        id: UUID?,
+        createdAt: Instant,
+        updatedAt: Instant,
+    ): ReminderRecord {
         val s = reminder.schedule
         return ReminderRecord(
-            id = reminder.id?.value,
+            id = id,
             userId = reminder.userId.value,
             title = reminder.title.value,
             scheduleType = scheduleTypeOf(s),
@@ -23,8 +34,9 @@ object ReminderMapper {
             scheduleDayOfWeek = (s as? Schedule.Weekly)?.dayOfWeek?.name,
             scheduleDayOfMonth = (s as? Schedule.Monthly)?.dayOfMonth?.value?.toShort(),
             enabled = reminder.enabled,
-            createdAt = now,
-            updatedAt = now,
+            createdAt = createdAt,
+            updatedAt = updatedAt,
+            deletedAt = reminder.deletedAt,
         )
     }
 
@@ -35,6 +47,7 @@ object ReminderMapper {
             title = ReminderTitle.of(record.title),
             schedule = scheduleOf(record),
             enabled = record.enabled,
+            deletedAt = record.deletedAt,
         )
 
     private fun scheduleTypeOf(s: Schedule): String = when (s) {

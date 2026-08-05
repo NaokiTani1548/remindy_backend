@@ -24,6 +24,6 @@ class ReminderQueryUseCase(
     /** 単一取得: 存在しない、または他人のものは一律 NotFound(=404で存在秘匿。API仕様Q5)。 */
     fun get(userId: UserId, id: ReminderId): Reminder =
         reminderRepository.findById(id)
-            ?.takeIf { it.userId == userId }
+            ?.takeIf { it.userId == userId && !it.isDeleted }
             ?: throw ReminderNotFoundException(id)
 }

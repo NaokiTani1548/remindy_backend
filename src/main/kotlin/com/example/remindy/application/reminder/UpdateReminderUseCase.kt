@@ -48,6 +48,6 @@ class UpdateReminderUseCase(
      */
     private fun load(userId: UserId, id: ReminderId): Reminder =
         reminderRepository.findById(id)
-            ?.takeIf { it.userId == userId }
+            ?.takeIf { it.userId == userId && !it.isDeleted }
             ?: throw ReminderNotFoundException(id)
 }

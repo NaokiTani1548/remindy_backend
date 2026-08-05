@@ -4,13 +4,8 @@ import com.example.remindy.domain.reminder.*
 import com.example.remindy.domain.shared.UserId
 import org.springframework.stereotype.Repository
 import java.time.Clock
+import java.time.Instant
 
-/**
- * ドメインの ReminderRepository ポートを infra で実装。
- * ・@Repository で Spring 管理。application 層はこの実装を知らずポートに依存する。
- * ・Clock を注入し、保存時の監査時刻に使う。
- * ・SpringData の JdbcRepository と Mapper を束ねてドメイン語彙に翻訳する。
- */
 @Repository
 class ReminderRepositoryImpl(
     private val jdbc: ReminderJdbcRepository,
@@ -18,15 +13,38 @@ class ReminderRepositoryImpl(
 ) : ReminderRepository {
 
     override fun save(reminder: Reminder): Reminder {
-        val saved = jdbc.save(ReminderMapper.toRecord(reminder, clock))
-        return ReminderMapper.toDomain(saved)
+        val now = Instant.now(clock)
+        val record = if (reminder.id == null) {
+            ReminderMapper.toNewRecord(reminder, now)
+        } else {
+            val createdAt = jdbc.findById(reminder.id!!.value)
+                .map { it.createdAt }
+                .orElseThrow { ReminderNotFoundException(reminder.id!!) }
+            ReminderMapper.toExistingRecord(reminder, createdAt = createdAt, updatedAt = now)
+        }
+        return ReminderMapper.toDomain(jdbc.save(record))
     }
 
     override fun findById(id: ReminderId): Reminder? =
         jdbc.findById(id.value).map(ReminderMapper::toDomain).orElse(null)
 
     override fun findByUserId(userId: UserId): List<Reminder> =
-        jdbc.findByUserId(userId.value).map(ReminderMapper::toDomain)
+        jdbc.findByUserIdAndDeletedAtIsNull(userId.value).map(ReminderMapper::toDomain)
 
-    override fun deleteById(id: ReminderId) = jdbc.deleteById(id.value)
+    override fun deleteById(id: ReminderId) {
+        val now = Instant.now(clock)
+        jdbc.softDelete(id.value, deletedAt = now, updatedAt = now)
+    }
+
+    override fun findByUserIdModifiedSince(userId: UserId, since: Instant): List<Reminder> =
+        jdbc.findByUserIdAndUpdatedAtGreaterThan(userId.value, since).map(ReminderMapper::toDomain)
+
+    override fun upsert(reminder: Reminder, createdAt: Instant, updatedAt: Instant) {
+        val record = ReminderMapper.toExistingRecord(reminder, createdAt = createdAt, updatedAt = updatedAt)
+        jdbc.upsert(record)
+    }
+
+    override fun softDelete(id: ReminderId, deletedAt: Instant) {
+        jdbc.softDelete(id.value, deletedAt = deletedAt, updatedAt = deletedAt)
+    }
 }

@@ -22,6 +22,7 @@ object StudyItemMapper {
             enabled = item.enabled,
             createdAt = createdAt,
             updatedAt = updatedAt,
+            deletedAt = item.deletedAt,
         )
 
     fun toDomain(record: StudyItemRecord): StudyItem =
@@ -32,5 +33,6 @@ object StudyItemMapper {
             prompt = Prompt.of(record.prompt),
             answer = Answer.of(record.answer),
             enabled = record.enabled,
+            deletedAt = record.deletedAt,
         )
 }

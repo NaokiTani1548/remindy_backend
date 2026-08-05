@@ -25,4 +25,5 @@ data class ReminderRecord(
     val enabled: Boolean,
     val createdAt: Instant,
     val updatedAt: Instant,
+    val deletedAt: Instant? = null,
 )

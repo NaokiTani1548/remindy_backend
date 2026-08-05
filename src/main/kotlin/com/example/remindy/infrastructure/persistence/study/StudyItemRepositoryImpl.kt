@@ -32,7 +32,22 @@ class StudyItemRepositoryImpl(
         jdbc.findById(id.value).map(StudyItemMapper::toDomain).orElse(null)
 
     override fun findByUserId(userId: UserId): List<StudyItem> =
-        jdbc.findByUserId(userId.value).map(StudyItemMapper::toDomain)
+        jdbc.findByUserIdAndDeletedAtIsNull(userId.value).map(StudyItemMapper::toDomain)
 
-    override fun deleteById(id: StudyItemId) = jdbc.deleteById(id.value)
+    override fun deleteById(id: StudyItemId) {
+        val now = Instant.now(clock)
+        jdbc.softDelete(id.value, deletedAt = now, updatedAt = now)
+    }
+
+    override fun findByUserIdModifiedSince(userId: UserId, since: Instant): List<StudyItem> =
+        jdbc.findByUserIdAndUpdatedAtGreaterThan(userId.value, since).map(StudyItemMapper::toDomain)
+
+    override fun upsert(studyItem: StudyItem, createdAt: Instant, updatedAt: Instant) {
+        val record = StudyItemMapper.toExistingRecord(studyItem, createdAt = createdAt, updatedAt = updatedAt)
+        jdbc.upsert(record)
+    }
+
+    override fun softDelete(id: StudyItemId, deletedAt: Instant) {
+        jdbc.softDelete(id.value, deletedAt = deletedAt, updatedAt = deletedAt)
+    }
 }

@@ -29,6 +29,9 @@ class StudyNotificationSettingRepositoryImpl(
     override fun findByUserId(userId: UserId): StudyNotificationSetting? =
         jdbc.findById(userId.value).map(::toDomain).orElse(null)
 
+    override fun findByUserIdIfModifiedSince(userId: UserId, since: Instant): StudyNotificationSetting? =
+        jdbc.findByUserIdAndUpdatedAtGreaterThan(userId.value, since)?.let(::toDomain)
+
     private fun toDomain(record: StudyNotificationSettingRecord): StudyNotificationSetting =
         StudyNotificationSetting.reconstitute(
             userId = UserId(record.userId),

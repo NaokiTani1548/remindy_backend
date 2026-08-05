@@ -36,6 +36,6 @@ class UpdateStudyItemUseCase(
 
     private fun load(userId: UserId, id: StudyItemId): StudyItem =
         studyItemRepository.findById(id)
-            ?.takeIf { it.userId == userId }
+            ?.takeIf { it.userId == userId && !it.isDeleted }
             ?: throw StudyItemNotFoundException(id)
 }

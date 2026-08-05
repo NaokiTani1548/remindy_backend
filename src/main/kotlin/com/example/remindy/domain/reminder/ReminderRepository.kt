@@ -1,18 +1,19 @@
 package com.example.remindy.domain.reminder
 
 import com.example.remindy.domain.shared.UserId
+import java.time.Instant
 
-/**
- * リマインダーの永続化ポート(インターフェース)。実装は infrastructure 層。
- * ドメインは「何を保存/取得したいか」だけを宣言し、"どう保存するか"(SQL/JDBC)は知らない。
- *
- * save の契約: 未永続(id=null)なら採番して INSERT、既存(id有り)なら UPDATE し、
- * いずれも id が確定した Reminder を返す。新規/更新の判定方法(Spring Data JDBC の
- * null-id 検出)は実装側の関心事で、この宣言には現れない。
- */
 interface ReminderRepository {
     fun save(reminder: Reminder): Reminder
     fun findById(id: ReminderId): Reminder?
+    /** アクティブ(論理削除されていない)なリマインダーを返す。 */
     fun findByUserId(userId: UserId): List<Reminder>
     fun deleteById(id: ReminderId)
+
+    /** 指定時刻以降に更新されたリマインダーを返す(論理削除済みを含む)。同期用。 */
+    fun findByUserIdModifiedSince(userId: UserId, since: Instant): List<Reminder>
+    /** 同期用UPSERT。クライアントが生成したIDで挿入または更新する。 */
+    fun upsert(reminder: Reminder, createdAt: Instant, updatedAt: Instant)
+    /** 論理削除。 */
+    fun softDelete(id: ReminderId, deletedAt: Instant)
 }

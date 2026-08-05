@@ -1,6 +1,7 @@
 package com.example.remindy.domain.study
 
 import com.example.remindy.domain.shared.UserId
+import java.time.Instant
 
 class StudyItem private constructor(
     val id: StudyItemId?,
@@ -9,8 +10,10 @@ class StudyItem private constructor(
     val prompt: Prompt,
     val answer: Answer,
     val enabled: Boolean,
+    val deletedAt: Instant? = null,
 ) {
     val isPersisted: Boolean get() = id != null
+    val isDeleted: Boolean get() = deletedAt != null
 
     companion object {
         fun create(userId: UserId, kind: StudyItemKind, prompt: Prompt, answer: Answer): StudyItem =
@@ -19,11 +22,16 @@ class StudyItem private constructor(
         fun reconstitute(
             id: StudyItemId, userId: UserId, kind: StudyItemKind,
             prompt: Prompt, answer: Answer, enabled: Boolean,
-        ): StudyItem = StudyItem(id, userId, kind, prompt, answer, enabled)
+            deletedAt: Instant? = null,
+        ): StudyItem = StudyItem(id, userId, kind, prompt, answer, enabled, deletedAt)
     }
-    fun changeContent(kind: StudyItemKind, prompt: Prompt, answer: Answer): StudyItem =
-        StudyItem(id, userId, kind, prompt, answer, enabled)
 
-    fun enable(): StudyItem = if (enabled) this else StudyItem(id, userId, kind, prompt, answer, true)
-    fun disable(): StudyItem = if (!enabled) this else StudyItem(id, userId, kind, prompt, answer, false)
+    fun changeContent(kind: StudyItemKind, prompt: Prompt, answer: Answer): StudyItem =
+        StudyItem(id, userId, kind, prompt, answer, enabled, deletedAt)
+
+    fun enable(): StudyItem = if (enabled) this else StudyItem(id, userId, kind, prompt, answer, true, deletedAt)
+    fun disable(): StudyItem = if (!enabled) this else StudyItem(id, userId, kind, prompt, answer, false, deletedAt)
+
+    fun softDelete(now: Instant): StudyItem =
+        if (isDeleted) this else StudyItem(id, userId, kind, prompt, answer, enabled, now)
 }
